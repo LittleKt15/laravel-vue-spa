@@ -24,14 +24,22 @@ class ProductRequest extends FormRequest
         $rules = [
             'name' => 'required|string',
             'price' => 'required|numeric',
-            "name.required" => "Need your Mother Fucker Product Name",
+
         ];
 
         if ($this->isMethod('put') || $this->isMethod('patch')) {
-            $rules['name'] = 'nullable|string';
-            $rules['price'] = 'nullable|numeric';
+            $rules['name'] = 'required|string';
+            $rules['price'] = 'required|numeric';
         }
 
         return $rules;
+    }
+
+    public function messages(): array
+    {
+        return [
+            // 'name.required' => 'Need your Mother Fucker Product Name',
+            // 'price.numeric' => 'Are you fucking serious'
+        ];
     }
 }

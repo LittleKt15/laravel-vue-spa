@@ -28,15 +28,25 @@
                         <h4>Product {{ isEditMode ? 'Edit' : 'Create' }} Form</h4>
                     </div>
                     <div class="card-body">
-                        <form action="" @submit.prevent="isEditMode ? update() : store()">
+                        <form action="" @submit.prevent="isEditMode ? update() : store()"
+                            @keydown="product.onKeydown($event)">
+
+                            <AlertError :form="product" :message="message" />
+
                             <div class="form-group mb-3">
                                 <label for="name">Name: </label>
-                                <input v-model="product.name" type="text" id="name" name="name" class="form-control">
+                                <input v-model="product.name" type="text" id="name" name="name" class="form-control"
+                                    :class="{ 'is-invalid': product.errors.has('name') }">
+                                <div class="text-danger" v-if="product.errors.has('name')"
+                                    v-html="product.errors.get('name')" />
                             </div>
 
                             <div class="form-group mb-3">
                                 <label for="price">Price: </label>
-                                <input v-model="product.price" type="number" id="price" name="price" class="form-control">
+                                <input v-model="product.price" type="text" id="price" name="price" class="form-control"
+                                    :class="{ 'is-invalid': product.errors.has('price') }">
+                                <div class="text-danger" v-if="product.errors.has('price')"
+                                    v-html="product.errors.get('price')" />
                             </div>
 
                             <button class="btn btn-primary ms-1" type="submit">
@@ -85,6 +95,14 @@
 <script>
 import axios from 'axios';
 import { Bootstrap5Pagination } from 'laravel-vue-pagination';
+import Form from 'vform'
+import {
+    Button,
+    HasError,
+    AlertError,
+    AlertErrors,
+    AlertSuccess
+} from 'vform/src/components/bootstrap5'
 
 export default {
     name: 'ProductComponent',
@@ -95,11 +113,11 @@ export default {
             products: {}, //Because of pagination the data will turn array to objects
             // products: [],
 
-            product: {
+            product: new Form({
                 id: '',
                 name: '',
                 price: ''
-            },
+            }),
 
             search: '',
         }
@@ -113,32 +131,38 @@ export default {
                 });
         },
         create() {
+            this.product.clear();
             this.isEditMode = false;
-            this.product.id = '';
-            this.product.name = '';
-            this.product.price = '';
+            this.product.reset();
         },
         store() {
-            axios.post('/api/products', this.product)
+            this.product.post('/api/products')
                 .then(response => {
                     this.view();
-                    this.product = { name: '', price: '' };
+                    // this.product.id = '';
+                    // this.product.name = '';
+                    // this.product.price = '';
+                    this.product.reset();
+                })
+                .catch(errors => {
+                    this.message = errors.response.data.message
+                    // console.log(error.response.data.message);
                 })
 
         },
         edit(product) {
+            this.product.clear();
             this.isEditMode = true;
-            this.product.id = product.id;
-            this.product.name = product.name;
-            this.product.price = product.price;
+            this.product.fill(product)
+            // this.product.id = product.id;
+            // this.product.name = product.name;
+            // this.product.price = product.price;
         },
         update() {
-            axios.put(`/api/products/${this.product.id}`, this.product)
+            this.product.put(`/api/products/${this.product.id}`, this.product)
                 .then(response => {
                     this.view();
-                    this.product.id = '';
-                    this.product.name = '';
-                    this.product.price = '';
+                    this.product.reset();
                 })
         },
         destroy(id) {
@@ -157,7 +181,7 @@ export default {
         // }
     },
     components: {
-        Bootstrap5Pagination,
+        Bootstrap5Pagination, AlertError, AlertSuccess,
     },
     created() {
         this.view();
